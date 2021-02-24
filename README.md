@@ -28,3 +28,22 @@ for i in range(10):
 ```
 
 This will run the subprocesses in series, parallel coming Soon (tm).
+
+## Decorator
+
+There's also the `isolate` decorator that will make sure every call to that function is
+ran as an isolated subprocess:
+
+```
+import nrnsub
+
+@nrnsub.isolate
+def my_sim(param1, opt1=None):
+  from neuron import h
+  s = h.Section(name="main")
+  # ...
+  return s.v
+
+for i in range(10):
+  my_sim(15, opt1=i)
+```

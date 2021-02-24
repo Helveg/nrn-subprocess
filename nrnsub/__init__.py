@@ -2,7 +2,12 @@
 Facilitates the isolation of NEURON simulators by running them in subprocesses.
 """
 
-import os, sys, dill, codecs, subprocess as _sp
+import os
+import sys
+import codecs
+import functools
+import subprocess as _sp
+import dill
 
 
 _worker_script = os.path.join(os.path.dirname(__file__), "_worker.py")
@@ -44,3 +49,13 @@ def _unpack_worker_result(result):
     b64bytes = result.split(_boundary_bytes)[1]
     bytestream = codecs.decode(b64bytes, "base64")
     return dill.loads(bytestream)
+
+def isolate(f):
+    """
+    Decorator to run the decorated function in an isolated subprocess.
+    """
+    @functools.wraps(f)
+    def subprocessor(*args, **kwargs):
+        return subprocess(f, *args, **kwargs)
+
+    return subprocessor
