@@ -1,4 +1,11 @@
 import nrnsub, sys
 
+path_instructions = eval(sys.argv[2])
+sys.path.extend(path_instructions)
 f, args, kwargs = nrnsub._unpack_worker_data(sys.argv[1])
-nrnsub._write_worker_result(f(*args, **kwargs))
+try:
+    r = f(*args, **kwargs)
+except Exception as e:
+    nrnsub._write_worker_error(e)
+else:
+    nrnsub._write_worker_result(r)
