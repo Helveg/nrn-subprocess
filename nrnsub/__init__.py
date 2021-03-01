@@ -6,6 +6,7 @@ import os
 import sys
 import codecs
 import inspect
+import tempfile
 import functools
 import subprocess as _sp
 import dill
@@ -17,7 +18,6 @@ _boundary_bytes = bytes(_boundary, "utf-8")
 
 def _get_obj_module_path(obj):
     p = inspect.getfile(obj)
-    print("FOUND PATH:", p)
     d = os.path.dirname(p)
     if p.endswith("__init__.py"):
         return os.path.dirname(d)
@@ -31,12 +31,30 @@ def subprocess(f, *args, _worker_path=None, **kwargs):
 
 def _invoke(f, args, kwargs, paths):
     objstr = _obj2str((f, args, kwargs))
+    # Virtual files to write subprocess' stdout & stderr to.
+    o, e = tempfile.SpooledTemporaryFile(), tempfile.SpooledTemporaryFile()
     try:
-        out = _sp.check_output([sys.executable, _worker_script, objstr, repr(paths)])
-    except _sp.CalledProcessError as e:
-        print(e.output)
-    else:
-        return _unpack_worker_result(out)
+        try:
+            process = _sp.Popen([sys.executable, _worker_script, objstr, repr(paths)], stdout=o, stderr=e)
+            process.communicate()
+        except Exception as e:
+            print("Uncaught Popen exception.")
+            raise
+        if process.returncode:
+            # Exit code nonzero: ERR
+            # Unpack the Exception that the worker has written to stderr and
+            # raise it.
+            e.seek(0)
+            err = _unpack_worker_result(e.read())
+            raise err
+        else:
+            # Exit code 0: OK
+            # Unpack the results that the worker wrote to stdout
+            o.seek(0)
+            return _unpack_worker_result(o.read())
+    finally:
+        o.close()
+        e.close()
 
 def _obj2str(obj):
     dillbytes = dill.dumps(obj)
@@ -52,6 +70,9 @@ def _unpack_worker_data(data):
 
 def _write_worker_result(result):
     sys.stdout.write(_boundary + _obj2str(result) + _boundary)
+
+def _write_worker_error(err):
+    sys.stderr.write(_boundary + _obj2str(err) + _boundary)
 
 def _unpack_worker_result(result):
     c = result.count(_boundary_bytes)

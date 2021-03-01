@@ -47,3 +47,20 @@ def my_sim(param1, opt1=None):
 for i in range(10):
   my_sim(15, opt1=i)
 ```
+
+## Worker `PATH`
+
+The worker might have trouble unpacking the serialized objects because it can't
+find the module they came from on the main process. This might result in `dill`
+raising "module not found" errors. To fix them you can pass the `_worker_path` to
+`subprocess` or `worker_path` to the `isolate` decorator:
+
+```
+import nrnsub
+
+sys.path.insert(0, "/home/me/my_modules_folder")
+
+@nrnsub.isolate(worker_path=["/home/me/my_modules_folder"])
+def f():
+  import something_in_my_modules_folder
+```

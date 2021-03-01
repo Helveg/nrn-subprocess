@@ -7,5 +7,6 @@ try:
     r = f(*args, **kwargs)
 except Exception as e:
     nrnsub._write_worker_error(e)
+    exit(1)
 else:
     nrnsub._write_worker_result(r)
