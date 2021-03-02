@@ -51,18 +51,27 @@ def _invoke(f, args, kwargs, paths):
         except Exception as e:
             print("Uncaught Popen exception.")
             raise
-        if process.returncode:
+        if process.returncode == 1:
             # Exit code nonzero: ERR
             # Unpack the Exception that the worker has written to stderr and
             # raise it.
             e.seek(0)
             ex = _unpack_worker_result(e.read())
             raise ex
-        else:
+        elif process.returncode == 0:
             # Exit code 0: OK
             # Unpack the results that the worker wrote to stdout
             o.seek(0)
             return _unpack_worker_result(o.read())
+        else:
+            # Exit code unknown: child crashed
+            o.seek(0)
+            e.seek(0)
+            print(" --- stdout ---")
+            print(o.read().decode("utf-8"))
+            print(" --- stderr ---")
+            print(e.read().decode("utf-8"))
+            raise RuntimeError("Child process crashed.")
     finally:
         o.close()
         e.close()
