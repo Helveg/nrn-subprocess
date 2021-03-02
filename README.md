@@ -14,6 +14,11 @@ pip install nrn-subprocess
 
 ## Usage
 
+Write your entire NEURON setup that you'd like to isolate inside of a function,
+then use the `subprocess` or `isolate` approach to execute it in isolation:
+
+### `subprocess`
+
 ```
 import nrnsub
 
@@ -29,7 +34,7 @@ for i in range(10):
 
 This will run the subprocesses in series, parallel coming Soon (tm).
 
-## Decorator
+### `isolate`
 
 There's also the `isolate` decorator that will make sure every call to that function is
 ran as an isolated subprocess:

@@ -9,14 +9,22 @@ import inspect
 import tempfile
 import functools
 import subprocess as _sp
+from tblib import pickling_support
 import dill
 
-
+# Install `traceback` pickling support so that the worker's exception tracebacks
+# can be sent back over stderr
+pickling_support.install()
+# Locate the worker script
 _worker_script = os.path.join(os.path.dirname(__file__), "_worker.py")
+# Marks boundaries between a serialized object and stderr/stdout junk.
 _boundary = "|!|!|!|!|!|!|!|!|!|"
+# Bytes version of the boundary
 _boundary_bytes = bytes(_boundary, "utf-8")
 
 def _get_obj_module_path(obj):
+    # Find the path that should be added to PATH on the worker so that `obj`'s
+    # module' can be imported on the worker.
     p = inspect.getfile(obj)
     d = os.path.dirname(p)
     if p.endswith("__init__.py"):
@@ -24,6 +32,9 @@ def _get_obj_module_path(obj):
     return d
 
 def subprocess(f, *args, _worker_path=None, **kwargs):
+    """
+    Run a function on a subprocess.
+    """
     if _worker_path is None:
         _worker_path = []
     result = _invoke(f, args, kwargs, _worker_path)
@@ -45,8 +56,8 @@ def _invoke(f, args, kwargs, paths):
             # Unpack the Exception that the worker has written to stderr and
             # raise it.
             e.seek(0)
-            err = _unpack_worker_result(e.read())
-            raise err
+            ex = _unpack_worker_result(e.read())
+            raise ex
         else:
             # Exit code 0: OK
             # Unpack the results that the worker wrote to stdout
