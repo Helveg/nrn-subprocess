@@ -89,7 +89,11 @@ def _unpack_worker_data(data):
     return _b64bytes2obj(b64bytes)
 
 def _write_worker_result(result):
-    sys.stdout.write(_boundary + _obj2str(result) + _boundary)
+    try:
+        dilled = _obj2str(result)
+    except:
+        raise ValueError("Could not pickle the isolated result.", result) from None
+    sys.stdout.write(_boundary + dilled + _boundary)
 
 def _write_worker_error(err):
     sys.stderr.write(_boundary + _obj2str(err) + _boundary)
