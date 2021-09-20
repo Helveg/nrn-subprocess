@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name="nrn-subprocess",
     author="Robin De Schepper",
-    version="1.3.3",
+    version="1.3.4",
     packages=["nrnsub"],
     description="Run isolated NEURON simulations in a single Python session.",
     long_description=long_description,
